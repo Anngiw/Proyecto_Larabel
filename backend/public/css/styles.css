@@ -1,0 +1,293 @@
+/* ==========================================
+   1. RESET Y CONFIGURACIÓN GENERAL
+   ========================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f1f5f9;
+    color: #334155;
+    min-height: 100vh;
+}
+
+/* ==========================================
+   2. PANTALLA DE REGISTRO (Centrada, Fondo Azul)
+   ========================================== */
+body.register-page, 
+body:has(#form-register) {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+body:has(#form-register) .form-container {
+    background: #ffffff;
+    padding: 40px 35px;
+    border-radius: 12px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 440px;
+}
+
+body:has(#form-register) h2,
+body:has(#form-register) .form-subtitle {
+    text-align: center;
+}
+
+body:has(#form-register) p {
+    text-align: center;
+}
+
+/* ==========================================
+   3. PANTALLA DE LOGIN (Pantalla Dividida - 50% y 50%)
+   ========================================== */
+body:has(#form-login) {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    display: flex;
+    justify-content: flex-end;
+    align-items: stretch;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* TÍTULO PRINCIPAL (::before): ¡Grande, llamativo y con presencia! */
+body:has(#form-login):before {
+    content: "🚀  TaskFlow Pro";
+    position: absolute;
+    left: 10%;
+    top: 36%;
+    width: 35%;
+    color: #ffffff;
+    font-size: 48px; /* Título grande que resalta inmediatamente */
+    font-weight: 800;
+    letter-spacing: -1px;
+    z-index: 1;
+    display: block;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* DESCRIPCIÓN (::after): Armoniosa, elegante y de tamaño cómodo abajo del título */
+body:has(#form-login):after {
+    content: "Organiza tus proyectos, prioriza tus tareas diarias y colabora con tu equipo en un solo lugar de forma eficiente.";
+    position: absolute;
+    left: 10%;
+    top: 47%;
+    width: 32%;
+    color: #93c5fd;
+    font-size: 18px; /* Tamaño de lectura perfecto y cómodo */
+    font-weight: 400;
+    line-height: 1.65;
+    z-index: 1;
+    display: block;
+}
+
+/* Contenedor del formulario de Login (Derecha): Ocupa el 50% exacto de la pantalla */
+body:has(#form-login) .form-container {
+    background: #ffffff;
+    width: 100%;
+    max-width: 50%;
+    min-height: 100vh;
+    padding: 60px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-shadow: -20px 0 50px rgba(0, 0, 0, 0.25);
+    z-index: 2;
+    border-radius: 0;
+}
+
+/* ==========================================
+   4. DASHBOARD / ZONA PRIVADA
+   ========================================== */
+body:has(.auth-container) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f8fafc;
+}
+
+.auth-card {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 450px;
+    border: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+/* ==========================================
+   5. COMPONENTES COMUNES (Títulos, Inputs, Botones)
+   ========================================== */
+h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 8px;
+    text-align: left;
+}
+
+.form-subtitle {
+    font-size: 14px;
+    color: #64748b;
+    text-align: left;
+    margin-bottom: 25px;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 13px 15px;
+    font-size: 15px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    outline: none;
+    transition: all 0.3s ease;
+    background-color: #f8fafc;
+    color: #1e293b;
+}
+
+.form-group input:focus {
+    border-color: #2563eb;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.btn-submit, .btn-primary {
+    width: 100%;
+    padding: 13px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: #111827;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    margin-top: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-submit:hover, .btn-primary:hover {
+    background-color: #1f2937;
+}
+
+.btn-submit:active, .btn-primary:active {
+    transform: scale(0.98);
+}
+
+.btn-submit:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+}
+
+p {
+    text-align: left;
+    font-size: 14px;
+    color: #64748b;
+    margin-top: 20px;
+}
+
+p a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+p a:hover {
+    text-decoration: underline;
+}
+
+/* ==========================================
+   6. SISTEMA DE ALERTAS (Sin !important)
+   ========================================== */
+.alert {
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    margin-bottom: 22px;
+    text-align: left;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    animation: fadeInAlert 0.3s ease-in-out;
+    border-left: 5px solid transparent;
+    background-color: #eff6ff;
+    color: #1e40af;
+    border-color: #bfdbfe;
+    border-left-color: #2563eb;
+}
+
+@keyframes fadeInAlert {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.alert.alert-error {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border-color: #fecaca;
+    border-left-color: #dc2626;
+}
+
+.alert.alert-success {
+    background-color: #f0fdf4;
+    color: #166534;
+    border-color: #bbf7d0;
+    border-left-color: #16a34a;
+}
+
+.alert.alert-info {
+    background-color: #eff6ff;
+    color: #1e40af;
+    border-color: #bfdbfe;
+    border-left-color: #2563eb;
+}
+
+/* ==========================================
+   7. RESPONSIVE DESIGN (Móviles)
+   ========================================== */
+@media (max-width: 900px) {
+    body:has(#form-login) {
+        justify-content: center;
+        background: #ffffff;
+    }
+    body:has(#form-login):before,
+    body:has(#form-login):after {
+        display: none;
+    }
+    body:has(#form-login) .form-container {
+        max-width: 100%;
+        min-height: 100vh;
+        box-shadow: none;
+        padding: 40px 20px;
+    }
+}
