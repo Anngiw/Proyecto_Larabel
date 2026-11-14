@@ -23,6 +23,10 @@
                 <label for="login-password">Contraseña</label>
                 <input type="password" id="login-password" name="password" placeholder="••••••••" required autocomplete="current-password">
             </div>
+            <!-- Enlace de recuperación de contraseña (HU-03) -->
+            <div style="text-align: right; margin-bottom: 15px;">
+                <a href="forgot-password.php" style="font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 600;">¿Olvidaste tu contraseña?</a>
+            </div>
 
             <button type="submit" id="btn-login" class="btn-submit"><span>Ingresar al Sistema</span></button>
         </form>

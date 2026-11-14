@@ -1,12 +1,12 @@
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- PROTECCIÓN DEL DASHBOARD ---
+    //  Proteccion del DashBoard
     const userInfoDiv = document.getElementById('user-info');
     if (userInfoDiv) {
         const token = localStorage.getItem('auth_token');
         if (!token) {
-            window.location.href = 'login.php';
+            window.location.replace('login.php');
             return;
         }
         const userName = localStorage.getItem('user_name');
@@ -15,7 +15,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- LÓGICA DE REGISTRO ---
+    // Limpiar formulario login al cargar (Evita rastros de correo/contraseña anteriores) 
+    const loginFormElement = document.getElementById('form-login');
+    if (loginFormElement) {
+        loginFormElement.reset();
+        const emailInput = document.getElementById('login-email');
+        const passInput = document.getElementById('login-password');
+        if (emailInput) emailInput.value = '';
+        if (passInput) passInput.value = '';
+    }
+
+    // Logica de Registro
     const registerForm = document.getElementById('form-register');
     if (registerForm) {
         registerForm.addEventListener('submit', async (e) => {
@@ -56,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response.status === 201) {
                     showAlert(data.message || '¡Usuario creado con éxito!', 'success');
                     setTimeout(() => {
-                        window.location.href = 'login.php';
+                        window.location.replace('login.php');
                     }, 2000);
                 } else if (response.status === 422) {
                     showAlert(data.message || 'El correo ya se encuentra registrado.', 'error');
@@ -73,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- LÓGICA DE LOGIN ---
+    // Logica del Login
     const loginForm = document.getElementById('form-login');
     if (loginForm) {
         loginForm.addEventListener('submit', async function(e) {
@@ -112,8 +122,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('auth_token', data.access_token);
                     localStorage.setItem('user_name', data.user.name);
 
-                    // Redirección directa al dashboard sin alertas bloqueantes
-                    window.location.href = 'dashboard.php';
+                    // Redirección directa y limpia al dashboard
+                    window.location.replace('dashboard.php');
                     return;
 
                 } else {
@@ -179,10 +189,135 @@ function setLoading(button, isLoading, text) {
     }
 }
 
+// Logica de recuperacion cumpliendo CA-03.1 y CA-03.2
+const forgotForm = document.getElementById('form-forgot');
+if (forgotForm) {
+    forgotForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearAlert();
+
+        const btn = document.getElementById('btn-forgot');
+        const email = document.getElementById('forgot-email').value.trim();
+
+        if (!email) {
+            showAlert('Por favor ingresa tu correo electrónico.', 'error');
+            return;
+        }
+
+        try {
+            setLoading(btn, true, 'Enviando...');
+            showAlert('Procesando solicitud...', 'info');
+
+            const response = await fetch(`${API_BASE_URL}/forgot-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showAlert(data.message, 'success');
+                forgotForm.reset();
+            } else {
+                showAlert(data.message || 'Verifica el formato del correo.', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error de conexión con el servidor.', 'error');
+        } finally {
+            setLoading(btn, false, 'Enviar Enlace de Recuperación');
+        }
+    });
+}
+
+// Logica de reestablecer contraseña cumpliendo CA-03.4 a CA-03.7
+const resetForm = document.getElementById('form-reset');
+if (resetForm) {
+    resetForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearAlert();
+
+        const btn = document.getElementById('btn-reset');
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        const email = urlParams.get('email');
+        const password = document.getElementById('reset-password').value;
+        const password_confirmation = document.getElementById('reset-password-confirmation').value;
+
+        if (!token || !email) {
+            showAlert('Enlace de recuperación incompleto o inválido.', 'error');
+            return;
+        }
+
+        if (password !== password_confirmation) {
+            showAlert('Las contraseñas no coinciden.', 'error');
+            return;
+        }
+
+        try {
+            setLoading(btn, true, 'Actualizando...');
+            showAlert('Validando y guardando nueva contraseña...', 'info');
+
+            const response = await fetch(`${API_BASE_URL}/reset-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ token, email, password, password_confirmation })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showAlert(data.message, 'success');
+                setTimeout(() => {
+                    window.location.replace('login.php');
+                }, 2500);
+            } else {
+                let errorMsg = data.message || 'Error al restablecer la contraseña.';
+                if (data.errors && data.errors.password) {
+                    errorMsg = data.errors.password[0];
+                }
+                showAlert(errorMsg, 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showAlert('Error de conexión con el servidor.', 'error');
+        } finally {
+            setLoading(btn, false, 'Guardar Nueva Contraseña');
+        }
+    });
+}
+
 window.App = {
-    logout: function() {
+    logout: async function() {
+        const token = localStorage.getItem('auth_token');
+        
+        if (token) {
+            try {
+                await fetch(`${API_BASE_URL}/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+            } catch (error) {
+                console.error('Error al notificar cierre de sesión al servidor:', error);
+            }
+        }
+
+        // Limpiar credenciales locales
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_name');
-        window.location.href = 'login.php';
+        
+        // Redirigir limpiando el historial para evitar que el botón atrás recupere datos
+        window.location.replace('login.php');
     }
 };
