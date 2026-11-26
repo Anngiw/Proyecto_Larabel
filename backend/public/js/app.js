@@ -149,6 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         });
     }
+
+    // Tareas y Calendario
+    const tareaForm = document.getElementById('form-tarea');
+    if (tareaForm) {
+        initTareas();
+    }
+    
 });
 
 function showAlert(message, type) {
@@ -321,3 +328,255 @@ window.App = {
         window.location.replace('login.php');
     }
 };
+let tareas = [];
+let calMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+function esc(txt) {
+    return String(txt ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function authHeaders() {
+    const token = localStorage.getItem('auth_token');
+    return {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+}
+
+function initTareas() {
+    document.getElementById('form-tarea').addEventListener('submit', guardarTarea);
+    document.getElementById('btn-cancel')?.addEventListener('click', limpiarTareaForm);
+    document.getElementById('btn-start')?.addEventListener('click', iniciarTarea);
+
+    document.getElementById('cal-prev')?.addEventListener('click', () => {
+        calMes = new Date(calMes.getFullYear(), calMes.getMonth() - 1, 1);
+        pintarCal();
+    });
+
+    document.getElementById('cal-next')?.addEventListener('click', () => {
+        calMes = new Date(calMes.getFullYear(), calMes.getMonth() + 1, 1);
+        pintarCal();
+    });
+
+    pintarCal();
+    pintarTareas();
+    cargarTareas();
+}
+
+function iniciarTarea() {
+    limpiarTareaForm();
+    const hoy = new Date().toISOString().slice(0, 10);
+    const inicio = document.getElementById('t-inicio');
+    const fin = document.getElementById('t-fin');
+    if (inicio && !inicio.value) inicio.value = hoy;
+    if (fin && !fin.value) fin.value = hoy;
+    document.getElementById('t-nombre')?.focus();
+}
+
+function limpiarTareaForm() {
+    document.getElementById('form-tarea')?.reset();
+    const idInput = document.getElementById('t-id');
+    const title = document.getElementById('form-title');
+    const cancel = document.getElementById('btn-cancel');
+    if (idInput) idInput.value = '';
+    if (title) title.textContent = 'Nueva Tarea';
+    if (cancel) cancel.style.display = 'none';
+}
+
+async function cargarTareas() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/tareas`, { headers: authHeaders() });
+        if (res.status === 401) {
+            window.App.logout();
+            return;
+        }
+        const json = await res.json();
+        tareas = json.data || [];
+        pintarTareas();
+        pintarCal();
+    } catch (err) {
+        console.error('Error cargando tareas:', err);
+        showAlert('No se pudieron cargar las tareas.', 'error');
+    }
+}
+
+async function guardarTarea(e) {
+    e.preventDefault();
+    clearAlert();
+
+    const btn = document.getElementById('btn-save');
+    const id = document.getElementById('t-id').value;
+    const body = {
+        nombre: document.getElementById('t-nombre').value.trim(),
+        descripcion: document.getElementById('t-desc').value.trim() || null,
+        fecha_inicio: document.getElementById('t-inicio').value,
+        fecha_fin: document.getElementById('t-fin').value,
+        estado: document.getElementById('t-estado').value
+    };
+
+    try {
+        setLoading(btn, true, 'Guardando...');
+        const url = id ? `${API_BASE_URL}/tareas/${id}` : `${API_BASE_URL}/tareas`;
+        const method = id ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method,
+            headers: authHeaders(),
+            body: JSON.stringify(body)
+        });
+        const json = await res.json();
+
+        if (!res.ok) {
+            const msg = json.errors
+                ? Object.values(json.errors).flat().join(' ')
+                : (json.message || 'Revisa los datos de la tarea.');
+            showAlert(msg, 'error');
+            return;
+        }
+
+        showAlert(json.message || 'Tarea guardada con éxito.', 'success');
+        limpiarTareaForm();
+        await cargarTareas();
+    } catch (err) {
+        console.error('Error guardando tarea:', err);
+        showAlert('Error de conexión al guardar la tarea.', 'error');
+    } finally {
+        setLoading(btn, false, 'Guardar Tarea');
+    }
+}
+
+function editarTarea(id) {
+    const t = tareas.find((item) => item.id === id);
+    if (!t) return;
+
+    document.getElementById('t-id').value = t.id;
+    document.getElementById('t-nombre').value = t.nombre;
+    document.getElementById('t-desc').value = t.descripcion || '';
+    document.getElementById('t-inicio').value = String(t.fecha_inicio).slice(0, 10);
+    document.getElementById('t-fin').value = String(t.fecha_fin).slice(0, 10);
+    document.getElementById('t-estado').value = t.estado;
+
+    const title = document.getElementById('form-title');
+    const cancel = document.getElementById('btn-cancel');
+    if (title) title.textContent = 'Editar Tarea';
+    if (cancel) cancel.style.display = 'inline-block';
+    document.getElementById('t-nombre')?.focus();
+}
+
+async function borrarTarea(id) {
+    if (!confirm('¿Deseas eliminar esta tarea?')) return;
+    clearAlert();
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/tareas/${id}`, {
+            method: 'DELETE',
+            headers: authHeaders()
+        });
+        const json = await res.json();
+
+        if (!res.ok) {
+            showAlert(json.message || 'No se pudo eliminar la tarea.', 'error');
+            return;
+        }
+
+        showAlert(json.message || 'Tarea eliminada.', 'success');
+        await cargarTareas();
+    } catch (err) {
+        console.error('Error eliminando tarea:', err);
+        showAlert('Error de conexión al eliminar la tarea.', 'error');
+    }
+}
+
+function pintarTareas() {
+    const box = document.getElementById('lista-tareas');
+    const count = document.getElementById('task-count');
+    if (!box) return;
+
+    if (count) {
+        count.textContent = `${tareas.length} ${tareas.length === 1 ? 'tarea' : 'tareas'}`;
+    }
+
+    if (!tareas.length) {
+        box.innerHTML = '<div class="task-empty">No hay tareas registradas todavía. Haz clic en <strong>+ Iniciar tarea</strong> para crear la primera.</div>';
+        return;
+    }
+
+    const badgeMap = {
+        'Pendiente': 'badge-pendiente',
+        'En progreso': 'badge-progreso',
+        'Completada': 'badge-completada'
+    };
+
+    box.innerHTML = tareas.map((t) => {
+        const ini = String(t.fecha_inicio).slice(0, 10);
+        const fin = String(t.fecha_fin).slice(0, 10);
+        const id = Number(t.id);
+        const badgeCls = badgeMap[t.estado] || 'badge-pendiente';
+
+        return `
+            <article class="task-card">
+                <div>
+                    <div class="task-top">
+                        <h4 class="task-title">${esc(t.nombre)}</h4>
+                        <span class="badge ${badgeCls}">${esc(t.estado)}</span>
+                    </div>
+                    <div class="task-dates">Del <strong>${esc(ini)}</strong> al <strong>${esc(fin)}</strong></div>
+                    ${t.descripcion ? `<p class="task-desc">${esc(t.descripcion)}</p>` : ''}
+                </div>
+                <div class="task-actions">
+                    <button type="button" class="btn-edit" onclick="App.editar(${id})">Editar</button>
+                    <button type="button" class="btn-del" onclick="App.borrar(${id})">Eliminar</button>
+                </div>
+            </article>
+        `;
+    }).join('');
+}
+
+function pintarCal() {
+    const grid = document.getElementById('cal-grid');
+    const title = document.getElementById('cal-title');
+    if (!grid || !title) return;
+
+    const y = calMes.getFullYear();
+    const m = calMes.getMonth();
+    const hoy = new Date().toISOString().slice(0, 10);
+    title.textContent = calMes.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+    const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    let html = dias.map((d) => `<div class="cal-day-name">${d}</div>`).join('');
+
+    const primerDia = new Date(y, m, 1).getDay();
+    const totalDias = new Date(y, m + 1, 0).getDate();
+
+    for (let i = 0; i < primerDia; i++) {
+        html += '<div class="cal-cell empty"></div>';
+    }
+
+    for (let d = 1; d <= totalDias; d++) {
+        const fecha = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const delDia = tareas.filter((t) => {
+            const ini = String(t.fecha_inicio).slice(0, 10);
+            const fin = String(t.fecha_fin).slice(0, 10);
+            return ini <= fecha && fecha <= fin;
+        });
+
+        const chips = delDia
+            .map((t) => `<div class="cal-chip" title="${esc(t.nombre)}">${esc(t.nombre)}</div>`)
+            .join('');
+
+        const todayCls = fecha === hoy ? ' today' : '';
+        html += `<div class="cal-cell${todayCls}"><strong>${d}</strong>${chips}</div>`;
+    }
+
+    grid.innerHTML = html;
+}
+
+window.App = window.App || {};
+window.App.editar = editarTarea;
+window.App.borrar = borrarTarea;
